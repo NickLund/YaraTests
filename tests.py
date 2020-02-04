@@ -59,15 +59,19 @@ def makeRule(varString, method):
 
 #Creates rule, loads file, and scans it using YARA
 def useYara(args):
-  plainRules = fileStrung(args.FILERULE)
-  makeRule(plainRules, args.ENCODE)
+  if (args.FILERULE != false):
+    StringRules = fileStrung(args.FILERULE)
+    makeRule(StringRules, args.ENCODE)
+  else:
+    with open('rule_file','w') as out:
+        out.write(fileStrung(args.FILERULECOMP))
   rules = yara.compile('rule_file')
   matches = rules.match('new_data.txt')
   return matches
 
 #Runs encoding functions on specified file then saves it
 def runEncode(args):
-  strung = fileStrung(args.FILEPLAIN)
+  strung = fileStrung(args.FILE)
   encoded = chooseEncode(strung, args)
   if (encoded == false):
     return
@@ -80,17 +84,22 @@ def get_args():
     parser = ArgumentParser(description="ADD, ROL, or ROR")
     parser.add_argument("-ENCODE", required=True, help="List type of Bitwise operation: ADD, ROL, or ROR")
     parser.add_argument("-MODIFY", required=True, help="Enter key for ADD operation or amount for ROL/ROR")
-    parser.add_argument("-FILEPLAIN", required=True, help="Filename for plaintext")
-    parser.add_argument("-FILERULE", help="Filename for plaintext rule")
-    parser.add_argument("-FILERULECOMP", help="Filename for complete Rules")
+    parser.add_argument("-FILE", required=True, help="Filename for plaintext")
+    parser.add_argument("-FILERULE", default=False, help="Filename for plaintext rule strings")
+    parser.add_argument("-FILERULECOMP", default=False, help="Filename for complete Rules")
+    parser.add_argument("-FILEENCODED", default=False, help="Flag for if the file is already encoded")
     args = parser.parse_args()
     return args
 
 def main():
     args = get_args()
-    encodedSuccess = runEncode(args)
-    if (encodedSuccess == false):
-      return
+    if (args.FILEENCODED != true):
+      encodedSuccess = runEncode(args)
+      if (encodedSuccess == false):
+        return
+    else:
+      with open('new_data.txt','w') as out:
+        out.write(fileStrung(args.FILE))
     matches = useYara(args)
     print(matches)
     return
