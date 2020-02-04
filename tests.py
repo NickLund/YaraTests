@@ -45,11 +45,11 @@ def fileStrung(file):
   return strung
 
 #Makes YARA Rule
-def makeRule(varString):
-  lineStart = "rule encoded"
+def makeRule(varString, method):
+  lineStart = "rule"
   lineBracket = "{"
   line2 = " strings:"
-  lineStrings = "   $string = \"%s\"" % varString
+  lineStrings = "   $string = \"%s\" %s" % varString, method
   lineCondition = " condition:"
   lineconditionList = "   $string"
   lineCloseBracket = "}"
@@ -60,8 +60,7 @@ def makeRule(varString):
 #Creates rule, loads file, and scans it using YARA
 def useYara(args):
   plainRules = fileStrung(args.FILERULE)
-  encodedRules = chooseEncode(plainRules, args)
-  makeRule(encodedRules)
+  makeRule(plainRules, args.ENCODE)
   rules = yara.compile('rule_file')
   matches = rules.match('new_data.txt')
   return matches
@@ -92,16 +91,9 @@ def main():
     encodedSuccess = runEncode(args)
     if (encodedSuccess == false):
       return
-    #this was basically creating a wrapper for converting rules into encoded methods, so a waste a lotta time
-    #matches = useYara(args)
-    matches = useYaraTryTwo(args)
-    #Unsure how to call these options in this python script (or .. what they mean)
-    #define USAGE_STRING \
-    #"Usage: yara [OPTION]... [NAMESPACE:]RULES_FILE... FILE | DIR | PID"
-    #"Usage: yara BYU-capstone [OPTION]... [NAMESPACE:]RULES_FILE... FILE | DIR | PID"
-
+    matches = useYara(args)
+    print(matches)
+    return
     
-    
-
 if __name__ == '__main__':
     main()
