@@ -1,0 +1,6 @@
+rule ror_test {
+    strings:
+        $a = "sudo apt install docker-ce -y" ror
+    condition:
+        $a
+}
