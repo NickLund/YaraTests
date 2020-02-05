@@ -1,0 +1,6 @@
+rule add_test {
+    strings:
+        $a = "sudo apt install docker-ce -y" rol
+    condition:
+        $a
+}
