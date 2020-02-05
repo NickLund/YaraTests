@@ -1,0 +1,6 @@
+rule ror_test2 {
+    strings:
+        $a = "hashed = crypt.crypt(attemptWord,saltFull)" ror
+    condition:
+        $a
+}
