@@ -1,0 +1,6 @@
+rule add_test2 {
+    strings:
+        $a = "hashed = crypt.crypt(attemptWord,saltFull)" rol
+    condition:
+        $a
+}
