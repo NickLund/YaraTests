@@ -2462,3 +2462,154 @@ int main(int argc, char** argv)
   yr_finalize();
   return 0;
 }
+
+-----------------
+  // xor by itself will match the plaintext version of the string too.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol\n\
+      condition:\n\
+        #a == 8\n\
+    }", "tests/data/rolRor.out");
+
+  // Make sure the combination of xor and ascii behaves the same as just xor.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol ascii\n\
+      condition:\n\
+        #a == 8\n\
+    }", "tests/data/rolRor.out");
+
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol(1-7)\n\
+      condition:\n\
+        #a == 7\n\
+    }", "tests/data/rolRor.out");
+
+  // We should have no matches here because we are not generating the ascii
+  // string, just the wide one, and the test data contains no wide strings.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~" rol wide\n\
+      condition:\n\
+        #a == 0\n\
+    }", "tests/data/rolRor.out");
+
+  // xor by itself is equivalent to xor(0-255).
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol wide\n\
+      condition:\n\
+        #a == 8\n\
+    }", "tests/data/rol_wide.out");
+
+  // This DOES NOT look for the plaintext wide version by itself.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol(1-7) wide\n\
+      condition:\n\
+        #a == 7\n\
+    }", "tests/data/rol_wide.out");
+
+  // Check the location of the match to make sure we match on the correct one.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol(1) wide\n\
+      condition:\n\
+        #a == 1\n\
+    }", "tests/data/rol_wide.out");
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol(300)\n\
+      condition:\n\
+        $a\n\
+    }", ERROR_INVALID_MODIFIER);
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol(200-10)\n\
+      condition:\n\
+        $a\n\
+    }", ERROR_INVALID_MODIFIER);
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = {00 11 22 33} rol\n\
+      condition:\n\
+        $a\n\
+    }", ERROR_SYNTAX_ERROR);
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = /foo(bar|baz)/ xor\n\
+      condition:\n\
+        $a\n\
+    }", ERROR_SYNTAX_ERROR);
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = \"ab\" rol rol\n\
+      condition:\n\
+        $a\n\
+    }", ERROR_DUPLICATED_MODIFIER);
+
+  // We should have no matches here because we are not generating the wide
+  // string, just the ascii one, and the test data contains no ascii strings.
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol ascii\n\
+      condition:\n\
+        #a == 0\n\
+    }", "tests/data/rol_wide.out");
+
+  // This should match 512 times because we are looking for the wide and ascii
+  // versions in plaintext and doing xor(0-255) (implicitly)
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" rol wide ascii\n\
+      condition:\n\
+        #a == 7\n\
+    }", "tests/data/rolwideandascii.out");
+
+  assert_true_rule_file(
+    "rule test {\n\
+      strings:\n\
+        $a = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !@#$%^&*(),./;'[]\-=`<>?:"{}|_+~\" wide ascii\n\
+      condition:\n\
+        #a == 2\n\
+    }", "tests/data/rolwideandascii.out");
+
+  assert_error(
+    "rule test {\n\
+      strings:\n\
+        $a = \"ab\" rol nocase\n\
+      condition:\n\
+        true\n\
+  }", ERROR_INVALID_MODIFIER);
+
+assert_warning(
+      "rule test { \
+        strings: $a = \"                    \" rol(7) \
+        condition: $a }")
+
+  // This will eventually xor with 0x41 and should cause a warning.
+  assert_warning(
+      "rule test { \
+        strings: $a = \"AAAAAAAAAAAAAAAAAAAA\" rol \
+        condition: $a }")
